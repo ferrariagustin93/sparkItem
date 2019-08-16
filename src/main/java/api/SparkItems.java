@@ -113,12 +113,12 @@ public class SparkItems {
          */
         post("/sites/:idSite/categories/:idCategories/:item",(req,res) -> {
             res.type("application/json");
-            StandarResponse standarResponse = Conection.getTestCode(urlUser+"/sites/"+req.params(":id")+"/categories/"+req.params(":idCategores")+"/"+req.params(":item"), Arrays.asList(new Header[]{new Header("token",req.headers("token")),new Header("id",req.headers("id"))}));
+            StandarResponse standarResponse = Conection.getTestCode(urlUser+"/sites/"+req.params(":idSite")+"/categories/"+req.params(":idCategores")+"/"+req.params(":item"), Arrays.asList(new Header[]{new Header("token",req.headers("token")),new Header("id",req.headers("id"))}));
+            res.status(standarResponse.getStatusResponse());
             if(standarResponse.getStatusResponse()==200) {
-            System.out.println("Entro al post");
+                System.out.println("Entro al post");
                 ItemToken itemToken = new ItemToken(req.params("item"), req.headers("id"), req.params(":idSite"), req.params("idCategories"));
                 String item = service.addItem(itemToken);
-                res.status(standarResponse.getStatusResponse());
                 return new Gson().toJson(new Gson().toJsonTree(itemToken));
             }
             return new Gson().toJson( standarResponse.getStatusResponse());
