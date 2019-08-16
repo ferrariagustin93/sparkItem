@@ -20,6 +20,7 @@ import static spark.Spark.*;
 public class SparkItems {
     public static void main(String[] args) {
         final IItemService service = new ItemServiceMapImpl();
+        final String urlUser = "http://localhost:8086";
 
         // obtener todos los items - DEBE VALIDAR
         get("/items",(req,res) -> {
@@ -89,7 +90,7 @@ public class SparkItems {
         // obtener todos los sitios a partir de SparkUser
         get("/sites",(req,res) -> {
             res.type("application/json");
-            Site[] sites= new Gson().fromJson(Conection.get("http://localhost:8081/sites", Arrays.asList(new Header[]{new Header("token",req.headers("token")),new Header("id",req.headers("id"))})),Site[].class);
+            Site[] sites= new Gson().fromJson(Conection.get(urlUser+"/sites", Arrays.asList(new Header[]{new Header("token",req.headers("token")),new Header("id",req.headers("id"))})),Site[].class);
             //Item item = service.getItem(req.headers("id"));
             return new Gson().toJson(new StandarResponse(StatusResponse.SUCCESS, new Gson().toJsonTree(sites)));
         });
@@ -98,14 +99,14 @@ public class SparkItems {
         // Solicita un user y un pass. Devuelve un token
         post("/users", (req,res) -> {
             res.type("application/json");
-            BufferedReader br = Conection.post("http://localhost:8081/users", Arrays.asList(new Header[]{new Header("username",req.headers("username")),new Header("password",req.headers("password"))}));
+            BufferedReader br = Conection.post(urlUser+"/users", Arrays.asList(new Header[]{new Header("username",req.headers("username")),new Header("password",req.headers("password"))}));
             return new Gson().toJson(new StandarResponse(StatusResponse.SUCCESS, new Gson().fromJson(br.readLine(),JsonElement.class)));
         });
 
         // Solicita un idSite y devuelve todas las categorias
         get("/sites/:id/categories",(req,res) -> {
             res.type("application/json");
-            Category[] categories= new Gson().fromJson(Conection.get("http://localhost:8081/sites/"+req.params(":id")+"/categories", Arrays.asList(new Header[]{new Header("token",req.headers("token")),new Header("id",req.headers("id"))})),Category[].class);
+            Category[] categories= new Gson().fromJson(Conection.get(urlUser+"/sites/"+req.params(":id")+"/categories", Arrays.asList(new Header[]{new Header("token",req.headers("token")),new Header("id",req.headers("id"))})),Category[].class);
             System.out.println("Entro al cateogires");
             return new Gson().toJson(new StandarResponse(StatusResponse.SUCCESS, new Gson().toJsonTree(categories)));
         });
@@ -113,7 +114,7 @@ public class SparkItems {
         // Solicita un idSite y devuelve todas las categorias
         get("/sites/:idSite/categories/:idCategories/:item",(req,res) -> {
             res.type("application/json");
-            Category[] categories= new Gson().fromJson(Conection.get("http://localhost:8081/sites/"+req.params(":id")+"/categories", Arrays.asList(new Header[]{new Header("token",req.headers("token")),new Header("id",req.headers("id"))})),Category[].class);
+            Category[] categories= new Gson().fromJson(Conection.get(urlUser+"/sites/"+req.params(":id")+"/categories", Arrays.asList(new Header[]{new Header("token",req.headers("token")),new Header("id",req.headers("id"))})),Category[].class);
             System.out.println("Entro al cateogires");
             return new Gson().toJson(new StandarResponse(StatusResponse.SUCCESS, new Gson().toJsonTree(categories)));
         });
