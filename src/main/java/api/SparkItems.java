@@ -8,6 +8,8 @@ import com.google.gson.JsonElement;
 import response.StandarResponse;
 import response.StatusResponse;
 import service.IItemService;
+import service.IItemTokenService;
+import serviceImpl.IItemTokenServiceMapImpl;
 import serviceImpl.ItemServiceMapImpl;
 
 import java.io.BufferedReader;
@@ -19,46 +21,44 @@ import static spark.Spark.*;
 
 public class SparkItems {
     public static void main(String[] args) {
-        final IItemService service = new ItemServiceMapImpl();
+        //final IItemService service = new ItemServiceMapImpl();
+        final IItemTokenService service = new IItemTokenServiceMapImpl();
         final String urlUser = "http://localhost:8086";
 
-        // obtener todos los items - DEBE VALIDAR
+        /**
+         * Devuelve todos los items cargados
+         */
         get("/items",(req,res) -> {
             res.type("application/json");
-            Collection <Item> items = service.getItems();
+            Collection <ItemToken> items = service.getItems();
             return new Gson().toJson(new StandarResponse(StatusResponse.SUCCESS, new Gson().toJsonTree(items)));
         });
 
-        // obtener items por usuario - DEBE VALIDAR
-        get("/item",(req,res) -> {
-            res.type("application/json");
-            Item item = service.getItem(req.headers("id"));
-            return new Gson().toJson(new StandarResponse(StatusResponse.SUCCESS, new Gson().toJsonTree(item)));
-        });
 
-        // agregar elementos - busca el elemento en el req parseado con Gson - La respuesta la envía en formato Json
-        post("/items", (req,res) -> {
-            res.type("application/json");
-            Item item = new Gson().fromJson(req.body(),Item.class);
-            String id = service.addItem(item.getId(),item);
-            return new Gson().toJson(new StandarResponse(StatusResponse.SUCCESS, new Gson().toJsonTree(item)));
-        });
-
-        // modificar elementos
+        /**
+         * Modifica un items. Requiere un id de item.
+         */
         put("/items/:id", (req,res) -> {
             res.type("application/json");
-            Item item = service.updateItem(req.params(":id"),new Gson().fromJson(req.body(),Item.class));
+            ItemToken item = service.updateItem(req.params(":id"),new Gson().fromJson(req.body(),ItemToken.class));
             return new Gson().toJson(new StandarResponse(StatusResponse.SUCCESS, new Gson().toJsonTree(item)));
         });
 
-        delete("sites/:id",(req,res) ->{
+
+        /**
+         * Elimina un item. Requiere el id de item por parametro.
+         */
+        delete("items/:id",(req,res) ->{
             res.type("application/json");
-            Item item = service.deleteItem(req.params(":id"));
+            ItemToken item = service.deleteItem(req.params(":id"));
             return new Gson().toJson(new StandarResponse( StatusResponse.SUCCESS, new Gson().toJsonTree(item)));
         });
 
-        // existe un elemento
-        options("sites/:id",(req,res) -> {
+        /**
+         * Devuelve si existe un item.
+         * Solicita el id del item.
+         */
+        options("items/:id",(req,res) -> {
             res.type("application/json");
             if(service.itemExists(req.params(":id"))) {
                 return new Gson().toJson(new StandarResponse(StatusResponse.SUCCESS));
@@ -68,64 +68,73 @@ public class SparkItems {
             }
         });
 
-        /* Ejemplo de como comectarse a localhost: */
-        // Site[] sites= new Gson().fromJson(getJSON.get("https://api.mercadolibre.com/sites"),Site[].class);
-        /* ----------------------------------------- */
-        //Conection.post("localhost:8081/users", Arrays.asList(new Header[]{new Header("username","marcos"),new Header("password","1234")}));
-        //Conection.get("localhost:8081/sites", Arrays.asList(new Header[]{new Header("token","esuntoken"),new Header("id","123456")}));
-        /*Site[] sites= new Gson().fromJson(Conection.get("http://localhost:8081/sites", Arrays.asList(new Header[]{new Header("token","esuntoken"),new Header("id","123456")})),Site[].class);
-        for(Site site: sites)
-        {
-            System.out.println(site.toString());
-        }*/
-
-        // obtener todos los sitios a partir de SparkUser
-        /*get("/sites",(req,res) -> {
-            res.type("application/json");
-            Site[] sites= new Gson().fromJson(Conection.get("http://localhost:8081/sites", Arrays.asList(new Header[]{new Header("token","esuntoken"),new Header("id","123456")})),Site[].class);
-            //Item item = service.getItem(req.headers("id"));
-            return new Gson().toJson(new StandarResponse(StatusResponse.SUCCESS, new Gson().toJsonTree(sites)));
-        });*/
-
-        // obtener todos los sitios a partir de SparkUser
-        get("/sites",(req,res) -> {
-            res.type("application/json");
-            Site[] sites= new Gson().fromJson(Conection.get(urlUser+"/sites", Arrays.asList(new Header[]{new Header("token",req.headers("token")),new Header("id",req.headers("id"))})),Site[].class);
-            //Item item = service.getItem(req.headers("id"));
-            return new Gson().toJson(new StandarResponse(StatusResponse.SUCCESS, new Gson().toJsonTree(sites)));
-        });
 
 
-        // Solicita un user y un pass. Devuelve un token
+        /**
+         * Valida el username y el password.
+         * Devuelve un token y un id de user.
+         */
         post("/users", (req,res) -> {
             res.type("application/json");
-            BufferedReader br = Conection.post(urlUser+"/users", Arrays.asList(new Header[]{new Header("username",req.headers("username")),new Header("password",req.headers("password"))}));
-            return new Gson().toJson(new StandarResponse(StatusResponse.SUCCESS, new Gson().fromJson(br.readLine(),JsonElement.class)));
+            StandarResponse sr = Conection.postTestCode(urlUser+"/users", Arrays.asList(new Header[]{new Header("username",req.headers("username")),new Header("password",req.headers("password"))}));
+            res.status(sr.getStatusResponse());
+            System.out.println("el statis antes de salir es:"+sr.getStatusResponse());
+            return new Gson().toJson(sr.getData());
         });
 
-        // Solicita un idSite y devuelve todas las categorias
+        /**
+         * Devuelve todos los sitios.
+         * Requiere id de user y token para realizar la operación.
+         */
+        get("/sites",(req,res) -> {
+            res.type("application/json");
+            StandarResponse standarResponse = Conection.getTestCode(urlUser+"/sites", Arrays.asList(new Header[]{new Header("token",req.headers("token")),new Header("id",req.headers("id"))}));
+            Site[] sites= new Gson().fromJson(standarResponse.getData(),Site[].class);
+            res.status(standarResponse.getStatusResponse());
+            return new Gson().toJson(new Gson().toJsonTree(sites));
+        });
+
+        /**
+         * Devuelve todas las categorias por un id de Site.
+         * Requiere en los hedears el id de user y el token para realizar la operación.
+         */
         get("/sites/:id/categories",(req,res) -> {
             res.type("application/json");
-            Category[] categories= new Gson().fromJson(Conection.get(urlUser+"/sites/"+req.params(":id")+"/categories", Arrays.asList(new Header[]{new Header("token",req.headers("token")),new Header("id",req.headers("id"))})),Category[].class);
-            System.out.println("Entro al cateogires");
-            return new Gson().toJson(new StandarResponse(StatusResponse.SUCCESS, new Gson().toJsonTree(categories)));
+            StandarResponse standarResponse = Conection.getTestCode(urlUser+"/sites/"+req.params(":id")+"/categories", Arrays.asList(new Header[]{new Header("token",req.headers("token")),new Header("id",req.headers("id"))}));
+            Category[] categories= new Gson().fromJson(standarResponse.getData(),Category[].class);
+            res.status(standarResponse.getStatusResponse());
+            return new Gson().toJson( new Gson().toJsonTree(categories));
         });
 
-        // Solicita un idSite y devuelve todas las categorias
-        get("/sites/:idSite/categories/:idCategories/:item",(req,res) -> {
+        /**
+         * Agrega un item. Dentro del item guarda el id del user, id del site, id de categiría y el nombre del item.
+         * Genera internamente un id de item.
+         * Requiere por header token y id de user.
+         */
+        post("/sites/:idSite/categories/:idCategories/:item",(req,res) -> {
             res.type("application/json");
-            Category[] categories= new Gson().fromJson(Conection.get(urlUser+"/sites/"+req.params(":id")+"/categories", Arrays.asList(new Header[]{new Header("token",req.headers("token")),new Header("id",req.headers("id"))})),Category[].class);
-            System.out.println("Entro al cateogires");
-            return new Gson().toJson(new StandarResponse(StatusResponse.SUCCESS, new Gson().toJsonTree(categories)));
+            StandarResponse standarResponse = Conection.getTestCode(urlUser+"/sites/"+req.params(":id")+"/categories/"+req.params(":idCategores")+"/"+req.params(":item"), Arrays.asList(new Header[]{new Header("token",req.headers("token")),new Header("id",req.headers("id"))}));
+            if(standarResponse.getStatusResponse()==200) {
+            System.out.println("Entro al post");
+                ItemToken itemToken = new ItemToken(req.params("item"), req.headers("id"), req.params(":idSite"), req.params("idCategories"));
+                String item = service.addItem(itemToken);
+                res.status(standarResponse.getStatusResponse());
+                return new Gson().toJson(new Gson().toJsonTree(itemToken));
+            }
+            return new Gson().toJson( standarResponse.getStatusResponse());
         });
 
+        /**
+         * Devuelve todos los itemes por usuario.
+         * <code>:idUser</code> es el id de usuario que se desea buscar.
+         */
+        get("/items/:idUser",(req,res) -> {
+            res.type("application/json");
+            System.out.println("Entro al item");
+            Collection <ItemToken>itemsUser = service.getItemsUser(req.params(":idUser"));
+            return new Gson().toJson(new Gson().toJsonTree(itemsUser));
 
+        });
 
-        /* Deberia poder realizar consultas al mockUser de Marcos, para esto debo realizar un Conection como aparece en el proyecto
-         * "MavenTest". Estas consultas son:
-          * POST localhost:8082/login y en el header mandar user y poss ---> Recibir idUser, user, token
-          * GET localhost:8082/sites y en el header token user ---> recibir todos los sites ordenados (idSite, nameSite)
-          * GET localhost:8082/sites/idSite y en el header token user ---> recibir las categorias de ese site
-          * POST localhost:8082/sites/idSite/idCategory/nameItem y en el header user token ---> y debe guardar el item con toda la info*/
     }
 }
